@@ -37,7 +37,7 @@ class RbacSeeder extends Seeder
 
         // Crear o actualizar super admin
         $user = User::firstOrCreate(
-            ['email' => 'superadmin@chilierp.local'],
+            ['email' => 'superadmin@chilierp.com'],
             [
                 'name' => 'Super Admin',
                 'password' => Hash::make('Admin1234!'),
