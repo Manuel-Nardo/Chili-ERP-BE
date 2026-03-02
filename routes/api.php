@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\MeController;
+use App\Http\Controllers\Api\Rbac\RoleController;
+use App\Http\Controllers\Api\Rbac\PermissionController;
 
 use App\Http\Controllers\Api\Users\UserController;
 use Spatie\Permission\Models\Role;
@@ -27,4 +29,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:users.view')->get('/roles', function () {
         return Role::query()->orderBy('name')->pluck('name');
     });
+});
+
+Route::middleware('auth:sanctum')->prefix('rbac')->group(function () {
+    Route::get('/permissions', [PermissionController::class, 'index']);
+
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::get('/roles/{role}', [RoleController::class, 'show']);
+    Route::post('/roles', [RoleController::class, 'store']);
+    Route::put('/roles/{role}', [RoleController::class, 'update']);
+    Route::delete('/roles/{role}', [RoleController::class, 'destroy']);
 });
