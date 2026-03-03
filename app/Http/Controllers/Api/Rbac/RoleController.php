@@ -6,36 +6,43 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Rbac\RoleStoreRequest;
 use App\Http\Requests\Rbac\RoleUpdateRequest;
 use Illuminate\Http\Request;
+use Spatie\Permission\Exceptions\RoleAlreadyExists;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
-    private string $guard = 'web'; // ✅ fijo
+    private string $guard = 'web';
 
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
 
-        $withPermissions = filter_var($request->query('with_permissions', true), FILTER_VALIDATE_BOOLEAN);
-        $withUsersCount  = filter_var($request->query('with_users_count', false), FILTER_VALIDATE_BOOLEAN); // ✅ default false
-        $perPage = (int) $request->query('per_page', 0); // 0 = sin paginar
+        $withPermissions = filter_var($request->query('with_permissions', false), FILTER_VALIDATE_BOOLEAN);
+        $withUsersCount  = filter_var($request->query('with_users_count', true), FILTER_VALIDATE_BOOLEAN);
+
+        $perPage = (int) $request->query('per_page', 0);
 
         $query = Role::query()
             ->where('guard_name', $this->guard)
             ->when($q !== '', fn ($qr) => $qr->where('name', 'like', "%{$q}%"))
             ->orderBy('name');
 
-        if ($withPermissions) $query->with(['permissions:id,name']);
-        if ($withUsersCount)  $query->withCount('users'); // solo si lo pides
+        if ($withPermissions) {
+            $query->with(['permissions:id,name,guard_name']);
+        }
+
+        if ($withUsersCount) {
+            $query->withCount('users');
+        }
 
         $result = $perPage > 0
-            ? $query->paginate($perPage)
+            ? $query->paginate($perPage, ['id', 'name', 'guard_name'])
             : $query->get(['id', 'name', 'guard_name']);
 
         $map = function (Role $role) use ($withPermissions, $withUsersCount) {
             return [
-                'id' => $role->id,
+                'id' => (int) $role->id,
                 'name' => $role->name,
                 'guard_name' => $role->guard_name,
                 'users_count' => $withUsersCount ? (int) ($role->users_count ?? 0) : null,
@@ -66,24 +73,36 @@ class RoleController extends Controller
 
     public function store(RoleStoreRequest $request)
     {
-        $role = Role::create([
-            'name' => $request->input('name'),
-            'guard_name' => $this->guard, // ✅ fijo
-        ]);
+        try {
+            $role = Role::create([
+                'name' => $request->input('name'),
+                'guard_name' => $this->guard,
+            ]);
 
-        $permissions = (array) $request->input('permissions', []);
-        $permIds = $this->resolvePermissionIds($permissions);
+        } catch (RoleAlreadyExists $e) {
+            return response()->json([
+                'success' => false,
+                'message' => "El rol '{$request->input('name')}' ya existe para el guard '{$this->guard}'.",
+                'code' => 'ROLE_ALREADY_EXISTS',
+                'errors' => [
+                    'name' => ["Ya existe un rol con ese nombre para el guard '{$this->guard}'."],
+                ],
+            ], 409);
+        }
 
-        $role->syncPermissions($permIds);
-        $role->load(['permissions:id,name']);
+        // Solo asigna permisos si explícitamente mandas el campo
+        if ($request->has('permissions')) {
+            $permissions = (array) $request->input('permissions', []);
+            $permIds = $this->resolvePermissionIds($permissions);
+            $role->syncPermissions($permIds);
+        }
 
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $role->id,
+                'id' => (int) $role->id,
                 'name' => $role->name,
                 'guard_name' => $role->guard_name,
-                'permissions' => $role->permissions->pluck('name')->values(),
                 'users_count' => 0,
             ],
         ], 201);
@@ -91,12 +110,23 @@ class RoleController extends Controller
 
     public function update(RoleUpdateRequest $request, Role $role)
     {
-        // ✅ seguridad: evita editar roles de otro guard
         abort_if($role->guard_name !== $this->guard, 404);
 
-        if ($request->filled('name')) {
-            $role->name = $request->input('name');
-            $role->save();
+        try {
+            if ($request->filled('name')) {
+                $role->name = $request->input('name');
+                $role->save();
+            }
+
+        } catch (RoleAlreadyExists $e) {
+            return response()->json([
+                'success' => false,
+                'message' => "El rol '{$request->input('name')}' ya existe para el guard '{$this->guard}'.",
+                'code' => 'ROLE_ALREADY_EXISTS',
+                'errors' => [
+                    'name' => ["Ya existe un rol con ese nombre para el guard '{$this->guard}'."],
+                ],
+            ], 409);
         }
 
         if ($request->has('permissions')) {
@@ -105,15 +135,12 @@ class RoleController extends Controller
             $role->syncPermissions($permIds);
         }
 
-        $role->load(['permissions:id,name']);
-
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $role->id,
+                'id' => (int) $role->id,
                 'name' => $role->name,
                 'guard_name' => $role->guard_name,
-                'permissions' => $role->permissions->pluck('name')->values(),
             ],
         ]);
     }
