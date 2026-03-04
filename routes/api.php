@@ -8,8 +8,8 @@ use App\Http\Controllers\Api\Auth\MeController;
 use App\Http\Controllers\Api\Rbac\RoleController;
 use App\Http\Controllers\Api\Rbac\PermissionController;
 use App\Http\Controllers\Api\Rbac\RolePermissionController;
+use App\Http\Controllers\Api\Rbac\UserController;
 
-use App\Http\Controllers\Api\Users\UserController;
 use Spatie\Permission\Models\Role;
 
 Route::get('/ping', fn () => response()->json(['ok' => true]));
@@ -50,6 +50,15 @@ Route::prefix('rbac')->group(function () {
     Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy']);
 
     Route::put('/roles/{role}/permissions', [RolePermissionController::class, 'sync']);
+    Route::get('/roles/{role}', [RoleController::class, 'show']);
     
+});
+
+Route::prefix('rbac')->group(function () {
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::delete('/users/{user}', [UserController::class, 'destroy']);
 });
 

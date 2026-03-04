@@ -181,4 +181,27 @@ class RoleController extends Controller
             ? $q->whereIn('id', $permissions)->pluck('id')->values()->all()
             : $q->whereIn('name', $permissions)->pluck('id')->values()->all();
     }
+
+    public function show(Request $request, Role $role)
+    {
+        abort_if($role->guard_name !== $this->guard, 404);
+
+        $withPermissions = filter_var($request->query('with_permissions', true), FILTER_VALIDATE_BOOLEAN);
+
+        if ($withPermissions) {
+            $role->load(['permissions:id,name,guard_name']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => (int) $role->id,
+                'name' => $role->name,
+                'guard_name' => $role->guard_name,
+                'permissions' => $withPermissions
+                    ? $role->permissions->pluck('name')->values()
+                    : [],
+            ],
+        ]);
+    }
 }
