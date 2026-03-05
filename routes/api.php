@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\Rbac\RoleController;
 use App\Http\Controllers\Api\Rbac\PermissionController;
 use App\Http\Controllers\Api\Rbac\RolePermissionController;
 use App\Http\Controllers\Api\Rbac\UserController;
+use App\Http\Controllers\Api\Catalogos\ZonaController;
+use App\Http\Controllers\Api\Catalogos\TipoClienteController;
+use App\Http\Controllers\Api\Catalogos\ClienteController;
 
 use Spatie\Permission\Models\Role;
 
@@ -62,3 +65,8 @@ Route::prefix('rbac')->group(function () {
     Route::delete('/users/{user}', [UserController::class, 'destroy']);
 });
 
+Route::prefix('catalogos')->group(function () {
+    Route::apiResource('zonas', ZonaController::class);
+    Route::apiResource('tipos-cliente', TipoClienteController::class);
+    Route::apiResource('clientes', ClienteController::class);
+});
