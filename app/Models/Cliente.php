@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cliente extends Model
 {
@@ -34,5 +35,15 @@ class Cliente extends Model
     public function back(): HasOne
     {
         return $this->hasOne(ClienteBack::class, 'cliente_id');
+    }
+
+    public function clientesTiposPedido(): HasMany
+    {
+        return $this->hasMany(ClienteTipoPedido::class, 'cliente_id');
+    }
+
+    public function tiposPedidoAsignados(): HasMany
+    {
+        return $this->hasMany(ClienteTipoPedido::class, 'cliente_id');
     }
 }

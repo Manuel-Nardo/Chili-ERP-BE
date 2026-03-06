@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Rbac\UserController;
 use App\Http\Controllers\Api\Catalogos\ZonaController;
 use App\Http\Controllers\Api\Catalogos\TipoClienteController;
 use App\Http\Controllers\Api\Catalogos\ClienteController;
+use App\Http\Controllers\Api\Catalogos\TipoPedidoController;
 
 use Spatie\Permission\Models\Role;
 
@@ -69,4 +70,13 @@ Route::prefix('catalogos')->group(function () {
     Route::apiResource('zonas', ZonaController::class);
     Route::apiResource('tipos-cliente', TipoClienteController::class);
     Route::apiResource('clientes', ClienteController::class);
+});
+
+Route::prefix('catalogos')->group(function () {
+    Route::get('tipos-pedido', [TipoPedidoController::class, 'index']);
+    Route::get('tipos-pedido/{tipo_pedido}', [TipoPedidoController::class, 'show']);
+
+    Route::post('tipos-pedido', [TipoPedidoController::class, 'store']);
+    Route::put('tipos-pedido/{tipo_pedido}', [TipoPedidoController::class, 'update']);
+    Route::delete('tipos-pedido/{tipo_pedido}', [TipoPedidoController::class, 'destroy']);
 });
