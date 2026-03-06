@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Catalogos\ZonaController;
 use App\Http\Controllers\Api\Catalogos\TipoClienteController;
 use App\Http\Controllers\Api\Catalogos\ClienteController;
 use App\Http\Controllers\Api\Catalogos\TipoPedidoController;
+use App\Http\Controllers\Api\Catalogos\TipoPedidoHorarioController;
 
 use Spatie\Permission\Models\Role;
 
@@ -79,4 +80,12 @@ Route::prefix('catalogos')->group(function () {
     Route::post('tipos-pedido', [TipoPedidoController::class, 'store']);
     Route::put('tipos-pedido/{tipo_pedido}', [TipoPedidoController::class, 'update']);
     Route::delete('tipos-pedido/{tipo_pedido}', [TipoPedidoController::class, 'destroy']);
+    
+    Route::get('tipos-pedido-horarios', [TipoPedidoHorarioController::class, 'index']);
+    Route::get('tipos-pedido-horarios/{tipo_pedido_horario}', [TipoPedidoHorarioController::class, 'show']);
+
+    Route::post('tipos-pedido-horarios', [TipoPedidoHorarioController::class, 'store']);
+    Route::put('tipos-pedido-horarios/{tipo_pedido_horario}', [TipoPedidoHorarioController::class, 'update']);
+    Route::delete('tipos-pedido-horarios/{tipo_pedido_horario}', [TipoPedidoHorarioController::class, 'destroy']);
+    
 });
