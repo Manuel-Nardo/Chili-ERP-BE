@@ -16,6 +16,10 @@ use App\Http\Controllers\Api\Catalogos\TipoPedidoController;
 use App\Http\Controllers\Api\Catalogos\TipoPedidoHorarioController;
 use App\Http\Controllers\Api\Catalogos\ClienteTipoPedidoController;
 use App\Http\Controllers\Api\Catalogos\ClienteTipoPedidoHorarioController;
+use App\Http\Controllers\Api\Catalogos\UnidadController;
+use App\Http\Controllers\Api\Catalogos\ImpuestoController;
+use App\Http\Controllers\Api\Catalogos\LineaController;
+use App\Http\Controllers\Api\Catalogos\ProductoController;
 
 use Spatie\Permission\Models\Role;
 
@@ -101,5 +105,29 @@ Route::prefix('catalogos')->group(function () {
     Route::post('clientes-tipos-pedido-horarios', [ClienteTipoPedidoHorarioController::class, 'store']);
     Route::put('clientes-tipos-pedido-horarios/{cliente_tipo_pedido_horario}', [ClienteTipoPedidoHorarioController::class, 'update']);
     Route::delete('clientes-tipos-pedido-horarios/{cliente_tipo_pedido_horario}', [ClienteTipoPedidoHorarioController::class, 'destroy']);
+
+    Route::get('unidades', [UnidadController::class, 'index']);
+    Route::get('unidades/{unidad}', [UnidadController::class, 'show']);
+    Route::post('unidades', [UnidadController::class, 'store']);
+    Route::put('unidades/{unidad}', [UnidadController::class, 'update']);
+    Route::delete('unidades/{unidad}', [UnidadController::class, 'destroy']);
+
+    Route::get('impuestos', [ImpuestoController::class, 'index']);
+    Route::get('impuestos/{impuesto}', [ImpuestoController::class, 'show']);
+    Route::post('impuestos', [ImpuestoController::class, 'store']);
+    Route::put('impuestos/{impuesto}', [ImpuestoController::class, 'update']);
+    Route::delete('impuestos/{impuesto}', [ImpuestoController::class, 'destroy']);
+
+    Route::get('lineas', [LineaController::class, 'index']);
+    Route::get('lineas/{linea}', [LineaController::class, 'show']);
+    Route::post('lineas', [LineaController::class, 'store']);
+    Route::put('lineas/{linea}', [LineaController::class, 'update']);
+    Route::delete('lineas/{linea}', [LineaController::class, 'destroy']);
+
+    Route::get('productos', [ProductoController::class, 'index']);
+    Route::get('productos/{producto}', [ProductoController::class, 'show']);
+    Route::post('productos', [ProductoController::class, 'store']);
+    Route::put('productos/{producto}', [ProductoController::class, 'update']);
+    Route::delete('productos/{producto}', [ProductoController::class, 'destroy']);
     
 });

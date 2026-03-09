@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RbacSeeder::class,
             RolesAndPermissionsSeeder::class,
             TiposClienteSeeder::class,
+            ImpuestoSeeder::class,
         ]);
         
     }
