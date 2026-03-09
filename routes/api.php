@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\Catalogos\TipoClienteController;
 use App\Http\Controllers\Api\Catalogos\ClienteController;
 use App\Http\Controllers\Api\Catalogos\TipoPedidoController;
 use App\Http\Controllers\Api\Catalogos\TipoPedidoHorarioController;
+use App\Http\Controllers\Api\Catalogos\ClienteTipoPedidoController;
+use App\Http\Controllers\Api\Catalogos\ClienteTipoPedidoHorarioController;
 
 use Spatie\Permission\Models\Role;
 
@@ -87,5 +89,17 @@ Route::prefix('catalogos')->group(function () {
     Route::post('tipos-pedido-horarios', [TipoPedidoHorarioController::class, 'store']);
     Route::put('tipos-pedido-horarios/{tipo_pedido_horario}', [TipoPedidoHorarioController::class, 'update']);
     Route::delete('tipos-pedido-horarios/{tipo_pedido_horario}', [TipoPedidoHorarioController::class, 'destroy']);
+
+    Route::get('clientes-tipos-pedido', [ClienteTipoPedidoController::class, 'index']);
+    Route::get('clientes-tipos-pedido/{cliente_tipo_pedido}', [ClienteTipoPedidoController::class, 'show']);
+    Route::post('clientes-tipos-pedido', [ClienteTipoPedidoController::class, 'store']);
+    Route::put('clientes-tipos-pedido/{cliente_tipo_pedido}', [ClienteTipoPedidoController::class, 'update']);
+    Route::delete('clientes-tipos-pedido/{cliente_tipo_pedido}', [ClienteTipoPedidoController::class, 'destroy']);
+
+    Route::get('clientes-tipos-pedido-horarios', [ClienteTipoPedidoHorarioController::class, 'index']);
+    Route::get('clientes-tipos-pedido-horarios/{cliente_tipo_pedido_horario}', [ClienteTipoPedidoHorarioController::class, 'show']);
+    Route::post('clientes-tipos-pedido-horarios', [ClienteTipoPedidoHorarioController::class, 'store']);
+    Route::put('clientes-tipos-pedido-horarios/{cliente_tipo_pedido_horario}', [ClienteTipoPedidoHorarioController::class, 'update']);
+    Route::delete('clientes-tipos-pedido-horarios/{cliente_tipo_pedido_horario}', [ClienteTipoPedidoHorarioController::class, 'destroy']);
     
 });
