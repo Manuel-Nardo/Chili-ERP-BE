@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\Catalogos\UnidadController;
 use App\Http\Controllers\Api\Catalogos\ImpuestoController;
 use App\Http\Controllers\Api\Catalogos\LineaController;
 use App\Http\Controllers\Api\Catalogos\ProductoController;
+use App\Http\Controllers\Api\Catalogos\TipoSerieController;
+use App\Http\Controllers\Api\Catalogos\SerieSucursalController;
 
 use Spatie\Permission\Models\Role;
 
@@ -129,5 +131,17 @@ Route::prefix('catalogos')->group(function () {
     Route::post('productos', [ProductoController::class, 'store']);
     Route::put('productos/{producto}', [ProductoController::class, 'update']);
     Route::delete('productos/{producto}', [ProductoController::class, 'destroy']);
+
+    Route::get('tipos-serie', [TipoSerieController::class, 'index']);
+    Route::get('tipos-serie/{tipo_serie}', [TipoSerieController::class, 'show']);
+    Route::post('tipos-serie', [TipoSerieController::class, 'store']);
+    Route::put('tipos-serie/{tipo_serie}', [TipoSerieController::class, 'update']);
+    Route::delete('tipos-serie/{tipo_serie}', [TipoSerieController::class, 'destroy']);
+
+    Route::get('series-sucursal', [SerieSucursalController::class, 'index']);
+    Route::get('series-sucursal/{serie_sucursal}', [SerieSucursalController::class, 'show']);
+    Route::post('series-sucursal', [SerieSucursalController::class, 'store']);
+    Route::put('series-sucursal/{serie_sucursal}', [SerieSucursalController::class, 'update']);
+    Route::delete('series-sucursal/{serie_sucursal}', [SerieSucursalController::class, 'destroy']);
     
 });
