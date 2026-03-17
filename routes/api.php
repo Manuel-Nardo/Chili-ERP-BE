@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\Catalogos\LineaController;
 use App\Http\Controllers\Api\Catalogos\ProductoController;
 use App\Http\Controllers\Api\Catalogos\TipoSerieController;
 use App\Http\Controllers\Api\Catalogos\SerieSucursalController;
+use App\Http\Controllers\Api\Pedidos\PedidoSugerenciaController;
 
 use Spatie\Permission\Models\Role;
 
@@ -143,5 +144,14 @@ Route::prefix('catalogos')->group(function () {
     Route::post('series-sucursal', [SerieSucursalController::class, 'store']);
     Route::put('series-sucursal/{serie_sucursal}', [SerieSucursalController::class, 'update']);
     Route::delete('series-sucursal/{serie_sucursal}', [SerieSucursalController::class, 'destroy']);
-    
+  
 });
+
+    Route::prefix('pedido-sugerencias')->group(function () {
+        Route::get('/', [PedidoSugerenciaController::class, 'index']);
+        Route::post('/', [PedidoSugerenciaController::class, 'store']);
+        Route::get('{pedidoSugerencia}', [PedidoSugerenciaController::class, 'show']);
+        Route::put('{pedidoSugerencia}', [PedidoSugerenciaController::class, 'update']);
+        Route::patch('{pedidoSugerencia}/confirmar', [PedidoSugerenciaController::class, 'confirmar']);
+        Route::patch('{pedidoSugerencia}/cancelar', [PedidoSugerenciaController::class, 'cancelar']);
+    });

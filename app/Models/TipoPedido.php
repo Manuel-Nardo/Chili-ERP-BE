@@ -29,10 +29,13 @@ class TipoPedido extends Model
         return $this->hasMany(TipoPedidoHorario::class, 'tipo_pedido_id');
     }
 
-    public function productos()
+    public function productos(): HasMany
     {
         return $this->hasMany(Producto::class, 'tipo_pedido_id');
     }
 
-
+    public function pedidoSugerencias(): HasMany
+    {
+        return $this->hasMany(PedidoSugerencia::class, 'tipo_pedido_id');
+    }
 }

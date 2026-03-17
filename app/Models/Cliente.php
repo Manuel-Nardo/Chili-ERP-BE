@@ -46,4 +46,9 @@ class Cliente extends Model
     {
         return $this->hasMany(ClienteTipoPedido::class, 'cliente_id');
     }
+
+    public function pedidoSugerencias(): HasMany
+    {
+        return $this->hasMany(PedidoSugerencia::class, 'cliente_id');
+    }
 }
