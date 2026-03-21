@@ -154,4 +154,5 @@ Route::prefix('catalogos')->group(function () {
         Route::put('{pedidoSugerencia}', [PedidoSugerenciaController::class, 'update']);
         Route::patch('{pedidoSugerencia}/confirmar', [PedidoSugerenciaController::class, 'confirmar']);
         Route::patch('{pedidoSugerencia}/cancelar', [PedidoSugerenciaController::class, 'cancelar']);
+        Route::post('generar', [PedidoSugerenciaController::class, 'generar']);
     });

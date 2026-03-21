@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PedidoSugerencia\StorePedidoSugerenciaRequest;
 use App\Http\Requests\PedidoSugerencia\UpdatePedidoSugerenciaRequest;
 use App\Http\Resources\PedidoSugerencia\PedidoSugerenciaResource;
+use App\Http\Requests\PedidoSugerencia\GenerarPedidoSugerenciaRequest;
 use App\Models\PedidoSugerencia;
 use App\Services\PedidoSugerenciaService;
 use Illuminate\Http\JsonResponse;
@@ -202,6 +203,34 @@ class PedidoSugerenciaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ocurrió un error al cancelar la sugerencia de pedido.',
+            ], 500);
+        }
+    }
+
+    public function generar(GenerarPedidoSugerenciaRequest $request): JsonResponse
+    {
+        try {
+            $sugerencia = $this->service->generarForecast(
+                $request->validated(),
+                $request->user()?->id
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sugerencia generada correctamente.',
+                'data' => new PedidoSugerenciaResource($sugerencia),
+            ], 201);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al generar la sugerencia.',
             ], 500);
         }
     }
