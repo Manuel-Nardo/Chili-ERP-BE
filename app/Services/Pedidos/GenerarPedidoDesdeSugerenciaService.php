@@ -5,6 +5,9 @@ namespace App\Services\Pedidos;
 use App\Models\PedidoDetErp;
 use App\Models\PedidoErp;
 use App\Models\PedidoSugerencia;
+use App\Models\Producto;
+use App\Models\SerieSucursal;
+use App\Models\TipoSerie;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -16,7 +19,10 @@ class GenerarPedidoDesdeSugerenciaService
         return DB::transaction(function () use ($pedidoSugerenciaId) {
             /** @var PedidoSugerencia $sugerencia */
             $sugerencia = PedidoSugerencia::query()
-                ->with(['detalles'])
+                ->with([
+                    'detalles.producto.impuestos',
+                    'detalles.producto.precios',
+                ])
                 ->lockForUpdate()
                 ->findOrFail($pedidoSugerenciaId);
 
@@ -25,32 +31,32 @@ class GenerarPedidoDesdeSugerenciaService
             [$serieId, $folio] = $this->resolverSerieYFolio($sugerencia);
 
             $pedido = PedidoErp::query()->create([
-                'serie' => $serieId,
-                'num_folio' => $folio,
-                'tipo' => $sugerencia->tipo_pedido_id,
+                'serie_id' => $serieId,
+                'folio' => $folio,
+                'tipo_pedido_id' => $sugerencia->tipo_pedido_id,
                 'estatus' => 'GENERADO',
                 'fecha_pedido' => now()->toDateString(),
-                'fecha_recepcion' => null,
                 'fecha_objetivo' => $sugerencia->fecha_objetivo,
-                'observaciones' => $sugerencia->observaciones ?? '',
-                'subtotal' => 0,
-                'impuestos' => 0,
-                'total' => 0,
-                'usuariorealizo' => $this->resolverUsuarioRealizo(),
-                'sucursal' => $sugerencia->cliente_id, // si aquí realmente guardas sucursal destino
-                'sucursal_origen' => null,
-                'sucursal_destino' => $sugerencia->cliente_id, // ajustar si cliente_id !== sucursal_id
+                'confirmado_at' => now(),
+                'sucursal_origen_id' => null,
+                'sucursal_destino_id' => $sugerencia->cliente_id,
                 'origen_tipo' => 'forecast',
                 'origen_id' => $sugerencia->id,
                 'pedido_sugerencia_id' => $sugerencia->id,
-                'autoriza_pedido_utileria' => 1,
+                'subtotal' => 0,
+                'impuestos' => 0,
+                'total' => 0,
+                'creado_por' => $this->resolverUsuarioRealizo(),
                 'autorizado_por' => Auth::id(),
-                'confirmado_at' => now(),
+                'autorizado_at' => now(),
+                'observaciones' => $sugerencia->observaciones ?? '',
             ]);
 
             $subtotal = 0.0;
             $impuestos = 0.0;
             $total = 0.0;
+            $productosProcesados = 0;
+            $productosConCantidadValida = 0;
 
             foreach ($sugerencia->detalles as $detalle) {
                 $cantidad = $this->resolverCantidadDetalle($detalle);
@@ -59,36 +65,44 @@ class GenerarPedidoDesdeSugerenciaService
                     continue;
                 }
 
-                $precioUnitario = $this->resolverPrecioUnitario($detalle, $sugerencia);
-                $tasaIva = $this->resolverTasaIva($detalle, $sugerencia);
+                $productosConCantidadValida++;
+
+                $precioUnitario = $this->resolverPrecioUnitario($detalle);
+                $tasaIva = $this->resolverTasaIva($detalle);
+
+                if ($precioUnitario <= 0) {
+                    continue;
+                }
 
                 $importe = round($cantidad * $precioUnitario, 2);
                 $impuestoIva = round($importe * $tasaIva, 2);
                 $lineTotal = round($importe + $impuestoIva, 2);
 
                 PedidoDetErp::query()->create([
-                    'folio' => $pedido->id,
+                    'pedido_id' => $pedido->id,
                     'articulo_id' => $detalle->producto_id,
                     'cantidad' => $cantidad,
-                    'pu' => $precioUnitario,
+                    'precio_unitario' => $precioUnitario,
                     'importe' => $importe,
                     'iva' => $tasaIva,
                     'impuesto_iva' => $impuestoIva,
                     'total' => $lineTotal,
                     'estatus' => 'GENERADO',
                     'observaciones' => $detalle->observaciones ?? '',
-                    'motivo_id' => null,
-                    'c_remisiona' => null,
-                    'c_existencias' => null,
                 ]);
 
                 $subtotal += $importe;
                 $impuestos += $impuestoIva;
                 $total += $lineTotal;
+                $productosProcesados++;
             }
 
-            if ($total <= 0) {
+            if ($productosConCantidadValida === 0) {
                 throw new RuntimeException('La sugerencia no tiene productos con cantidad válida para generar pedido.');
+            }
+
+            if ($productosProcesados === 0 || $total <= 0) {
+                throw new RuntimeException('No se pudo generar el pedido porque los productos no tienen precio unitario válido.');
             }
 
             $pedido->update([
@@ -104,7 +118,12 @@ class GenerarPedidoDesdeSugerenciaService
                 'updated_by' => Auth::id(),
             ]);
 
-            return $pedido->fresh(['detalles', 'sugerencia']);
+            return $pedido->fresh([
+                'detalles',
+                'sugerencia',
+                'serieSucursal',
+                'tipoPedido',
+            ]);
         });
     }
 
@@ -125,49 +144,123 @@ class GenerarPedidoDesdeSugerenciaService
 
     protected function resolverSerieYFolio(PedidoSugerencia $sugerencia): array
     {
-        // TODO:
-        // Reemplaza esta lógica con tu tabla real de series por sucursal/tipo.
-        // Por ahora deja un fallback controlado.
-        $serieId = 1;
+        $tipoSerieId = $this->resolverTipoSeriePedidoId();
 
-        $ultimoFolio = PedidoErp::query()
-            ->where('serie', $serieId)
-            ->max('num_folio');
+        $serie = SerieSucursal::query()
+            ->where('cliente_id', $sugerencia->cliente_id)
+            ->where('tipo_serie_id', $tipoSerieId)
+            ->where('activo', true)
+            ->lockForUpdate()
+            ->first();
 
-        $siguienteFolio = $ultimoFolio ? ((int) $ultimoFolio + 1) : 1;
+        if (!$serie) {
+            throw new RuntimeException('No existe una serie activa configurada para este cliente y tipo de serie de pedido.');
+        }
 
-        return [$serieId, $siguienteFolio];
+        $siguienteFolio = ((int) $serie->folio_actual) + 1;
+
+        $serie->update([
+            'folio_actual' => $siguienteFolio,
+        ]);
+
+        return [(int) $serie->id, $siguienteFolio];
+    }
+
+    protected function resolverTipoSeriePedidoId(): int
+    {
+        $tipoSerie = TipoSerie::query()
+            ->where('activo', true)
+            ->where(function ($query) {
+                $query->where('clave', 'PED')
+                    ->orWhere('clave', 'PEDIDO')
+                    ->orWhere('nombre', 'PEDIDOS')
+                    ->orWhere('nombre', 'PEDIDO');
+            })
+            ->first();
+
+        if (!$tipoSerie) {
+            throw new RuntimeException('No existe un tipo de serie configurado para pedidos.');
+        }
+
+        return (int) $tipoSerie->id;
     }
 
     protected function resolverCantidadDetalle($detalle): float
     {
-        if (isset($detalle->cantidad_final) && $detalle->cantidad_final !== null) {
-            return (float) $detalle->cantidad_final;
+        $final = isset($detalle->cantidad_final) ? (float) $detalle->cantidad_final : null;
+        $ajustada = isset($detalle->cantidad_ajustada) ? (float) $detalle->cantidad_ajustada : null;
+        $sugerida = isset($detalle->cantidad_sugerida) ? (float) $detalle->cantidad_sugerida : null;
+
+        if ($final !== null && $final > 0) {
+            return $final;
         }
 
-        if (isset($detalle->cantidad_ajustada) && $detalle->cantidad_ajustada !== null) {
-            return (float) $detalle->cantidad_ajustada;
+        if ($ajustada !== null && $ajustada > 0) {
+            return $ajustada;
         }
 
-        if (isset($detalle->cantidad_sugerida) && $detalle->cantidad_sugerida !== null) {
-            return (float) $detalle->cantidad_sugerida;
+        if ($sugerida !== null && $sugerida > 0) {
+            return $sugerida;
         }
 
         return 0;
     }
 
-    protected function resolverPrecioUnitario($detalle, PedidoSugerencia $sugerencia): float
+    protected function resolverPrecioUnitario($detalle): float
     {
-        // TODO:
-        // Sustituir por la lógica real de costos/precios de ERP si aplica.
+        $producto = $detalle->producto;
+
+        if (!$producto instanceof Producto) {
+            return 0;
+        }
+
+        if ($producto->precio_actual !== null && (float) $producto->precio_actual > 0) {
+            return round((float) $producto->precio_actual, 2);
+        }
+
+        $hoy = now()->toDateString();
+
+        $precioVigente = $producto->precios
+            ->filter(function ($precio) use ($hoy) {
+                $fechaInicio = $precio->fecha_inicio?->format('Y-m-d');
+                $fechaFin = $precio->fecha_fin?->format('Y-m-d');
+
+                $inicioValido = !$fechaInicio || $fechaInicio <= $hoy;
+                $finValido = !$fechaFin || $fechaFin >= $hoy;
+
+                return $inicioValido && $finValido;
+            })
+            ->sortByDesc(function ($precio) {
+                return $precio->fecha_inicio?->timestamp ?? 0;
+            })
+            ->first();
+
+        if ($precioVigente && (float) $precioVigente->precio > 0) {
+            return round((float) $precioVigente->precio, 2);
+        }
+
         return 0;
     }
 
-    protected function resolverTasaIva($detalle, PedidoSugerencia $sugerencia): float
+    protected function resolverTasaIva($detalle): float
     {
-        // TODO:
-        // Sustituir si cada artículo tiene IVA distinto.
-        return 0;
+        $producto = $detalle->producto;
+
+        if (!$producto instanceof Producto) {
+            return 0;
+        }
+
+        $iva = $producto->impuestos
+            ->first(function ($impuesto) {
+                return $impuesto->activo
+                    && strtoupper((string) $impuesto->tipo) === 'IVA';
+            });
+
+        if (!$iva) {
+            return 0;
+        }
+
+        return round(((float) $iva->porcentaje) / 100, 6);
     }
 
     protected function resolverUsuarioRealizo(): string

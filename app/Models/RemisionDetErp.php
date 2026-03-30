@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PedidoDetErp extends Model
+class RemisionDetErp extends Model
 {
-    protected $table = 'pedidos_det_erp';
+    protected $table = 'remisiones_det_erp';
 
     protected $fillable = [
-        'pedido_id',
+        'remision_id',
+        'pedido_det_erp_id',
         'articulo_id',
         'cantidad',
         'precio_unitario',
@@ -31,9 +32,14 @@ class PedidoDetErp extends Model
         'total' => 'float',
     ];
 
-    public function pedido(): BelongsTo
+    public function remision(): BelongsTo
     {
-        return $this->belongsTo(PedidoErp::class, 'pedido_id');
+        return $this->belongsTo(RemisionErp::class, 'remision_id');
+    }
+
+    public function pedidoDetalle(): BelongsTo
+    {
+        return $this->belongsTo(PedidoDetErp::class, 'pedido_det_erp_id');
     }
 
     public function producto(): BelongsTo

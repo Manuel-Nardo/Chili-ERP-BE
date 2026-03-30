@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\Catalogos\ProductoController;
 use App\Http\Controllers\Api\Catalogos\TipoSerieController;
 use App\Http\Controllers\Api\Catalogos\SerieSucursalController;
 use App\Http\Controllers\Api\Pedidos\PedidoSugerenciaController;
+use App\Http\Controllers\Api\Pedidos\PedidoErpController;
+use App\Http\Controllers\Api\Remisiones\RemisionErpController;
 
 use Spatie\Permission\Models\Role;
 
@@ -155,4 +157,18 @@ Route::prefix('catalogos')->group(function () {
         Route::patch('{pedidoSugerencia}/confirmar', [PedidoSugerenciaController::class, 'confirmar']);
         Route::patch('{pedidoSugerencia}/cancelar', [PedidoSugerenciaController::class, 'cancelar']);
         Route::post('generar', [PedidoSugerenciaController::class, 'generar']);
+
+        Route::post('{id}/generar-pedido', [PedidoSugerenciaController::class, 'generarPedido']);
+    });
+
+    Route::prefix('pedidos-erp')->group(function () {
+        Route::post('/buscar', [PedidoErpController::class, 'index']);
+        Route::get('{pedidoErp}', [PedidoErpController::class, 'show']);
+
+        Route::get('/{pedidoErp}/remisionable', [PedidoErpController::class, 'remisionable']);        
+    });
+
+    Route::prefix('remisiones-erp')->group(function () {
+        Route::post('/generar-desde-pedido/{pedidoErp}', [RemisionErpController::class, 'generarDesdePedido']);
+        Route::get('/{remisionErp}', [RemisionErpController::class, 'show']);
     });

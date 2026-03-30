@@ -7,6 +7,7 @@ use App\Models\PedidoSugerenciaDetalle;
 use App\Models\Producto;
 use App\Services\Forecast\ForecastHistoricoService;
 use App\Services\Forecast\ForecastMotorService;
+use App\Models\PedidoErp;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -322,5 +323,11 @@ class PedidoSugerenciaService
             'creador',
             'editor',
         ]);
+    }
+
+    public function generarPedidoDesdeSugerencia(int $id, ?int $userId = null): PedidoErp
+    {
+        return app(\App\Services\Pedidos\GenerarPedidoDesdeSugerenciaService::class)
+            ->ejecutar($id);
     }
 }

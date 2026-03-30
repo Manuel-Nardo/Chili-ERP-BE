@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\Pedidos;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PedidoSugerencia\GenerarPedidoSugerenciaRequest;
 use App\Http\Requests\PedidoSugerencia\StorePedidoSugerenciaRequest;
 use App\Http\Requests\PedidoSugerencia\UpdatePedidoSugerenciaRequest;
 use App\Http\Resources\PedidoSugerencia\PedidoSugerenciaResource;
-use App\Http\Requests\PedidoSugerencia\GenerarPedidoSugerenciaRequest;
 use App\Models\PedidoSugerencia;
 use App\Services\PedidoSugerenciaService;
 use Illuminate\Http\JsonResponse;
@@ -33,36 +33,28 @@ class PedidoSugerenciaController extends Controller
             ]);
 
         if ($request->filled('cliente_id')) {
-            $query->where('cliente_id', $request->integer('cliente_id'));
+            $query->where('cliente_id', (int) $request->cliente_id);
         }
 
         if ($request->filled('tipo_pedido_id')) {
-            $query->where('tipo_pedido_id', $request->integer('tipo_pedido_id'));
+            $query->where('tipo_pedido_id', (int) $request->tipo_pedido_id);
         }
 
         if ($request->filled('estatus')) {
-            $query->where('estatus', (string) $request->input('estatus'));
-        }
-
-        if ($request->filled('origen')) {
-            $query->where('origen', (string) $request->input('origen'));
+            $query->where('estatus', $request->estatus);
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_objetivo', '>=', $request->input('fecha_desde'));
+            $query->whereDate('fecha_objetivo', '>=', $request->fecha_desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_objetivo', '<=', $request->input('fecha_hasta'));
+            $query->whereDate('fecha_objetivo', '<=', $request->fecha_hasta);
         }
 
-        $perPage = (int) $request->input('per_page', 15);
-        $perPage = $perPage > 0 ? min($perPage, 100) : 15;
-
         $items = $query
-            ->orderByDesc('fecha_objetivo')
             ->orderByDesc('id')
-            ->paginate($perPage);
+            ->paginate((int) ($request->get('per_page', 10)));
 
         return response()->json([
             'success' => true,
@@ -231,6 +223,43 @@ class PedidoSugerenciaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ocurrió un error al generar la sugerencia.',
+            ], 500);
+        }
+    }
+
+    public function generarPedido(int $id): JsonResponse
+    {
+        try {
+            $pedido = $this->service->generarPedidoDesdeSugerencia(
+                $id,
+                request()->user()?->id
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pedido generado correctamente.',
+                'data' => [
+                    'id' => $pedido->id,
+                    'serie_id' => $pedido->serie_id,
+                    'folio' => $pedido->folio,
+                    'estatus' => $pedido->estatus,
+                    'subtotal' => $pedido->subtotal,
+                    'impuestos' => $pedido->impuestos,
+                    'total' => $pedido->total,
+                    'pedido_sugerencia_id' => $pedido->pedido_sugerencia_id,
+                ],
+            ], 201);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al generar el pedido.',
             ], 500);
         }
     }

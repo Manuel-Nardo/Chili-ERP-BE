@@ -6,23 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class PedidoErp extends Model
+class RemisionErp extends Model
 {
-    protected $table = 'pedidos_erp';
+    protected $table = 'remisiones_erp';
 
     protected $fillable = [
+        'pedido_erp_id',
         'serie_id',
         'folio',
-        'tipo_pedido_id',
         'estatus',
-        'fecha_pedido',
+        'fecha_remision',
         'fecha_objetivo',
         'confirmado_at',
         'sucursal_origen_id',
         'sucursal_destino_id',
-        'origen_tipo',
-        'origen_id',
-        'pedido_sugerencia_id',
         'subtotal',
         'impuestos',
         'total',
@@ -33,8 +30,8 @@ class PedidoErp extends Model
     ];
 
     protected $casts = [
-        'fecha_pedido' => 'date',
-        'fecha_objetivo' => 'date',
+        'fecha_remision' => 'date:Y-m-d',
+        'fecha_objetivo' => 'date:Y-m-d',
         'confirmado_at' => 'datetime',
         'autorizado_at' => 'datetime',
         'subtotal' => 'float',
@@ -42,24 +39,19 @@ class PedidoErp extends Model
         'total' => 'float',
     ];
 
-    public function detalles(): HasMany
+    public function pedido(): BelongsTo
     {
-        return $this->hasMany(PedidoDetErp::class, 'pedido_id');
+        return $this->belongsTo(PedidoErp::class, 'pedido_erp_id');
     }
 
-    public function sugerencia(): BelongsTo
+    public function detalles(): HasMany
     {
-        return $this->belongsTo(PedidoSugerencia::class, 'pedido_sugerencia_id');
+        return $this->hasMany(RemisionDetErp::class, 'remision_id');
     }
 
     public function serieSucursal(): BelongsTo
     {
         return $this->belongsTo(SerieSucursal::class, 'serie_id');
-    }
-
-    public function tipoPedido(): BelongsTo
-    {
-        return $this->belongsTo(TipoPedido::class, 'tipo_pedido_id');
     }
 
     public function sucursalOrigen(): BelongsTo
