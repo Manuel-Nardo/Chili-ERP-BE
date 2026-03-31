@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\Catalogos\SerieSucursalController;
 use App\Http\Controllers\Api\Pedidos\PedidoSugerenciaController;
 use App\Http\Controllers\Api\Pedidos\PedidoErpController;
 use App\Http\Controllers\Api\Remisiones\RemisionErpController;
+use App\Http\Controllers\Api\Remisiones\RemisionRecepcionErpController;
 
 use Spatie\Permission\Models\Role;
 
@@ -169,6 +170,13 @@ Route::prefix('catalogos')->group(function () {
     });
 
     Route::prefix('remisiones-erp')->group(function () {
+        Route::post('/search', [RemisionErpController::class, 'index']);
         Route::post('/generar-desde-pedido/{pedidoErp}', [RemisionErpController::class, 'generarDesdePedido']);
         Route::get('/{remisionErp}', [RemisionErpController::class, 'show']);
+    });
+
+    Route::prefix('remisiones-erp')->group(function () {
+        Route::post('recepcion/listado', [RemisionRecepcionErpController::class, 'listado']);
+        Route::post('recepcion/detalle', [RemisionRecepcionErpController::class, 'show']);
+        Route::post('recepcion/recibir', [RemisionRecepcionErpController::class, 'recibir']);
     });

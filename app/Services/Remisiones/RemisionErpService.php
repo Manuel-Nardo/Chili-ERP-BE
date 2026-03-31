@@ -5,6 +5,7 @@ namespace App\Services\Remisiones;
 use App\Models\PedidoErp;
 use App\Models\RemisionDetErp;
 use App\Models\RemisionErp;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -31,6 +32,7 @@ class RemisionErpService
                 ->pluck('total_remisionado', 'rde.pedido_det_erp_id');
 
             $detallesPedido = $pedidoErp->detalles->keyBy('id');
+
             $detallesInput = collect($payload['detalles'] ?? [])
                 ->map(function ($row) {
                     return [
@@ -48,7 +50,6 @@ class RemisionErpService
             $subtotal = 0.0;
             $impuestos = 0.0;
             $total = 0.0;
-
             $lineas = [];
 
             foreach ($detallesInput as $input) {
@@ -104,13 +105,16 @@ class RemisionErpService
 
             $folio = ((int) RemisionErp::where('serie_id', $pedidoErp->serie_id)->max('folio')) + 1;
 
+            $fechaRemision = $this->normalizeDate($payload['fecha_remision'] ?? now()->toDateString());
+            $fechaObjetivo = $this->normalizeDate($payload['fecha_objetivo'] ?? $pedidoErp->fecha_objetivo);
+
             $remision = RemisionErp::create([
                 'pedido_erp_id' => $pedidoErp->id,
                 'serie_id' => $pedidoErp->serie_id,
                 'folio' => $folio,
                 'estatus' => 'GENERADA',
-                'fecha_remision' => $payload['fecha_remision'],
-                'fecha_objetivo' => $payload['fecha_objetivo'] ?? $pedidoErp->fecha_objetivo,
+                'fecha_remision' => $fechaRemision,
+                'fecha_objetivo' => $fechaObjetivo,
                 'sucursal_origen_id' => $pedidoErp->sucursal_origen_id,
                 'sucursal_destino_id' => $pedidoErp->sucursal_destino_id,
                 'subtotal' => round($subtotal, 2),
@@ -178,5 +182,14 @@ class RemisionErpService
         $pedidoErp->update([
             'estatus' => $nuevoEstatus,
         ]);
+    }
+
+    protected function normalizeDate($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        return Carbon::parse($value)->toDateString();
     }
 }

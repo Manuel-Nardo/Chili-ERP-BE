@@ -14,6 +14,8 @@ class RemisionDetErp extends Model
         'pedido_det_erp_id',
         'articulo_id',
         'cantidad',
+        'cantidad_recibida',
+        'diferencia',
         'precio_unitario',
         'importe',
         'iva',
@@ -21,10 +23,13 @@ class RemisionDetErp extends Model
         'total',
         'estatus',
         'observaciones',
+        'observaciones_recepcion',
     ];
 
     protected $casts = [
         'cantidad' => 'float',
+        'cantidad_recibida' => 'float',
+        'diferencia' => 'float',
         'precio_unitario' => 'float',
         'importe' => 'float',
         'iva' => 'float',

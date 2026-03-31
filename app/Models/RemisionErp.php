@@ -18,6 +18,9 @@ class RemisionErp extends Model
         'fecha_remision',
         'fecha_objetivo',
         'confirmado_at',
+        'fecha_recepcion',
+        'recibido_por',
+        'recibido_at',
         'sucursal_origen_id',
         'sucursal_destino_id',
         'subtotal',
@@ -27,12 +30,15 @@ class RemisionErp extends Model
         'autorizado_por',
         'autorizado_at',
         'observaciones',
+        'observaciones_recepcion',
     ];
 
     protected $casts = [
         'fecha_remision' => 'date:Y-m-d',
         'fecha_objetivo' => 'date:Y-m-d',
         'confirmado_at' => 'datetime',
+        'fecha_recepcion' => 'date:Y-m-d',
+        'recibido_at' => 'datetime',
         'autorizado_at' => 'datetime',
         'subtotal' => 'float',
         'impuestos' => 'float',
