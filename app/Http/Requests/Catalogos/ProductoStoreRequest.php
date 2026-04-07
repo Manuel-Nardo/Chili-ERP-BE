@@ -23,7 +23,10 @@ class ProductoStoreRequest extends FormRequest
             'facturable' => ['nullable', 'boolean'],
 
             'linea_id' => ['required', 'integer', 'exists:lineas,id'],
-            'tipo_pedido_id' => ['required', 'integer', 'exists:tipos_pedido,id'],
+
+            'tipos_pedido_ids' => ['required', 'array', 'min:1'],
+            'tipos_pedido_ids.*' => ['integer', 'exists:tipos_pedido,id'],
+
             'medida_id' => ['required', 'integer', 'exists:unidades,id'],
             'medida_compra_id' => ['required', 'integer', 'exists:unidades,id'],
 
@@ -50,8 +53,12 @@ class ProductoStoreRequest extends FormRequest
             'nombre.required' => 'El nombre es requerido.',
             'linea_id.required' => 'La línea es requerida.',
             'linea_id.exists' => 'La línea seleccionada no existe.',
-            'tipo_pedido_id.required' => 'El tipo de pedido es requerido.',
-            'tipo_pedido_id.exists' => 'El tipo de pedido seleccionado no existe.',
+
+            'tipos_pedido_ids.required' => 'Debes seleccionar al menos un tipo de pedido.',
+            'tipos_pedido_ids.array' => 'El campo tipos de pedido debe ser un arreglo.',
+            'tipos_pedido_ids.min' => 'Debes seleccionar al menos un tipo de pedido.',
+            'tipos_pedido_ids.*.exists' => 'Uno o más tipos de pedido no existen.',
+
             'medida_id.required' => 'La unidad es requerida.',
             'medida_id.exists' => 'La unidad seleccionada no existe.',
             'medida_compra_id.required' => 'La unidad de compra es requerida.',

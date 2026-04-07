@@ -20,6 +20,7 @@ class ProductoController extends Controller
             ->with([
                 'linea:id,nombre',
                 'tipoPedido:id,nombre',
+                'tiposPedido:id,nombre',
                 'medida:id,nombre,abreviatura',
                 'medidaCompra:id,nombre,abreviatura',
                 'impuestos:id,nombre,codigo,tipo,porcentaje',
@@ -42,7 +43,11 @@ class ProductoController extends Controller
         }
 
         if ($request->filled('tipo_pedido_id')) {
-            $query->where('tipo_pedido_id', $request->tipo_pedido_id);
+            $tipoPedidoId = (int) $request->tipo_pedido_id;
+
+            $query->whereHas('tiposPedido', function ($subQuery) use ($tipoPedidoId) {
+                $subQuery->where('tipos_pedido.id', $tipoPedidoId);
+            });
         }
 
         if ($request->filled('ruta')) {
@@ -87,6 +92,7 @@ class ProductoController extends Controller
         $producto->load([
             'linea:id,nombre',
             'tipoPedido:id,nombre',
+            'tiposPedido:id,nombre',
             'medida:id,nombre,abreviatura',
             'medidaCompra:id,nombre,abreviatura',
             'impuestos:id,nombre,codigo,tipo,porcentaje',
@@ -104,6 +110,11 @@ class ProductoController extends Controller
     public function store(ProductoStoreRequest $request): JsonResponse
     {
         $producto = DB::transaction(function () use ($request) {
+            $tiposPedidoIds = collect($request->input('tipos_pedido_ids', []))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
             $producto = Producto::create([
                 'clave' => $request->clave,
                 'clave_sat' => $request->filled('clave_sat') ? trim($request->clave_sat) : null,
@@ -112,13 +123,18 @@ class ProductoController extends Controller
                 'activo' => $request->boolean('activo', true),
                 'facturable' => $request->boolean('facturable', false),
                 'linea_id' => $request->linea_id,
-                'tipo_pedido_id' => $request->tipo_pedido_id,
+
+                // compatibilidad temporal
+                'tipo_pedido_id' => $tiposPedidoIds->first(),
+
                 'medida_id' => $request->medida_id,
                 'medida_compra_id' => $request->medida_compra_id,
                 'ruta' => $request->filled('ruta') ? strtoupper(trim($request->ruta)) : null,
                 'precio_actual' => $request->filled('precio_actual') ? $request->precio_actual : null,
                 'costo_actual' => $request->filled('costo_actual') ? $request->costo_actual : null,
             ]);
+
+            $producto->tiposPedido()->sync($tiposPedidoIds->all());
 
             if ($request->filled('impuestos')) {
                 $producto->impuestos()->sync($request->impuestos);
@@ -147,6 +163,7 @@ class ProductoController extends Controller
             return $producto->load([
                 'linea:id,nombre',
                 'tipoPedido:id,nombre',
+                'tiposPedido:id,nombre',
                 'medida:id,nombre,abreviatura',
                 'medidaCompra:id,nombre,abreviatura',
                 'impuestos:id,nombre,codigo,tipo,porcentaje',
@@ -169,6 +186,11 @@ class ProductoController extends Controller
             $nuevoPrecio = $request->filled('precio_actual') ? (float) $request->precio_actual : null;
             $nuevoCosto = $request->filled('costo_actual') ? (float) $request->costo_actual : null;
 
+            $tiposPedidoIds = collect($request->input('tipos_pedido_ids', []))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
             $producto->update([
                 'clave' => $request->clave,
                 'clave_sat' => $request->filled('clave_sat') ? trim($request->clave_sat) : null,
@@ -177,7 +199,10 @@ class ProductoController extends Controller
                 'activo' => $request->boolean('activo'),
                 'facturable' => $request->boolean('facturable'),
                 'linea_id' => $request->linea_id,
-                'tipo_pedido_id' => $request->tipo_pedido_id,
+
+                // compatibilidad temporal
+                'tipo_pedido_id' => $tiposPedidoIds->first(),
+
                 'medida_id' => $request->medida_id,
                 'medida_compra_id' => $request->medida_compra_id,
                 'ruta' => $request->filled('ruta') ? strtoupper(trim($request->ruta)) : null,
@@ -185,6 +210,7 @@ class ProductoController extends Controller
                 'costo_actual' => $nuevoCosto,
             ]);
 
+            $producto->tiposPedido()->sync($tiposPedidoIds->all());
             $producto->impuestos()->sync($request->input('impuestos', []));
 
             if ($request->filled('precio_actual') && ($precioAnterior === null || $precioAnterior !== $nuevoPrecio)) {
@@ -222,6 +248,7 @@ class ProductoController extends Controller
             return $producto->fresh()->load([
                 'linea:id,nombre',
                 'tipoPedido:id,nombre',
+                'tiposPedido:id,nombre',
                 'medida:id,nombre,abreviatura',
                 'medidaCompra:id,nombre,abreviatura',
                 'impuestos:id,nombre,codigo,tipo,porcentaje',
@@ -238,6 +265,7 @@ class ProductoController extends Controller
     public function destroy(Producto $producto): JsonResponse
     {
         DB::transaction(function () use ($producto) {
+            $producto->tiposPedido()->detach();
             $producto->impuestos()->detach();
             $producto->costos()->delete();
             $producto->precios()->delete();

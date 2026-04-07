@@ -39,9 +39,21 @@ class Producto extends Model
         return $this->belongsTo(Linea::class, 'linea_id');
     }
 
+    // Relación legacy, mantener por compatibilidad temporal
     public function tipoPedido(): BelongsTo
     {
         return $this->belongsTo(TipoPedido::class, 'tipo_pedido_id');
+    }
+
+    // Nueva relación correcta
+    public function tiposPedido(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            TipoPedido::class,
+            'producto_tipo_pedido',
+            'producto_id',
+            'tipo_pedido_id'
+        )->withTimestamps();
     }
 
     public function medida(): BelongsTo
